@@ -13,14 +13,9 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import Skeleton from "@mui/material/Skeleton";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import countries from "../countries.json";
-import {
-  FormControl,
-  Grid,
-  InputAdornment,
-  OutlinedInput,
-} from "@mui/material";
+import { Grid, InputAdornment, OutlinedInput } from "@mui/material";
 import useLocalStorage from "../hooks/useLocaleStorage";
 
 const Select = React.lazy(() => import("./Select"));
@@ -91,7 +86,7 @@ const Convertor: React.FC<ConvertorProps> = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setConvertionAmount]);
 
   const onChangeInput = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
