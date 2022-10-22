@@ -15,7 +15,13 @@ import Skeleton from "@mui/material/Skeleton";
 
 import React, { useCallback, useEffect, useState } from "react";
 import countries from "../countries.json";
-import { FormControl, InputAdornment, OutlinedInput } from "@mui/material";
+import {
+  FormControl,
+  Grid,
+  InputAdornment,
+  OutlinedInput,
+} from "@mui/material";
+import useLocalStorage from "../hooks/useLocaleStorage";
 
 const Select = React.lazy(() => import("./Select"));
 
@@ -26,20 +32,20 @@ export enum CurrencyType {
   Convertion,
 }
 
-const Convertor: React.FC<ConvertorProps> = (props) => {
+const Convertor: React.FC<ConvertorProps> = () => {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [convertionCurrency, setConversionCurrency] = useState([
-    "HKD",
-    "INR",
-    "USD",
-  ]);
+
+  const [convertionCurrency, setConversionCurrency] = useLocalStorage(
+    "prefered-keys",
+    ["HKD", "INR", "USD"]
+  );
 
   const [baseCurrencyConvertion, setBaseCurrencyConvertion] = useState(1);
   const [baseCurrencyAmount, setBaseCurrencyAmount] = useState(1);
 
-  const [convertionAmount, setConvertionAmount] = useState<
+  const [convertionAmount, setConvertionAmount] = useLocalStorage<
     Record<string, number>
-  >({});
+  >("convertionAmount", {});
 
   const [loading, setLoading] = useState(false);
 
@@ -50,13 +56,16 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
     []
   );
 
-  const onSelect = useCallback((code: string, selected: boolean) => {
-    if (selected) {
-      setConversionCurrency((prev) => [...prev, code]);
-    } else {
-      setConversionCurrency((prev) => prev.filter((c) => c !== code));
-    }
-  }, []);
+  const onSelect = useCallback(
+    (code: string, selected: boolean) => {
+      if (selected) {
+        setConversionCurrency((prev) => [...prev, code]);
+      } else {
+        setConversionCurrency((prev) => prev.filter((c) => c !== code));
+      }
+    },
+    [setConversionCurrency]
+  );
 
   const onConvert = useCallback(async () => {
     const myHeaders = new Headers();
@@ -91,10 +100,6 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
     setBaseCurrencyAmount(Number(e.target.value));
   };
 
-  useEffect(() => {
-    onConvert();
-  }, [onConvert]);
-
   const getConvertion = useCallback(
     (code: string) => {
       const amount =
@@ -125,16 +130,18 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Box
+                      <Grid
+                        container
                         sx={{
-                          display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
                           height: 40,
                         }}
                       >
-                        <Box sx={{ width: "200px" }}>{c}</Box>
-                        <Box>
+                        <Grid xs={6} md={8} item>
+                          {c}
+                        </Grid>
+                        <Grid xs={6} md={4} item>
                           {loading ? (
                             <Skeleton
                               variant="circular"
@@ -143,26 +150,26 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
                             />
                           ) : (
                             <>
-                              <FormControl fullWidth sx={{ m: 1 }}>
-                                <OutlinedInput
-                                  type="number"
-                                  value={getConvertion(c)}
-                                  name={c}
-                                  onChange={onChangeInput}
-                                  startAdornment={
-                                    <InputAdornment position="start">
-                                      {
-                                        //@ts-ignore
-                                        countries[c].symbol
-                                      }
-                                    </InputAdornment>
-                                  }
-                                />
-                              </FormControl>
+                              <OutlinedInput
+                                type="number"
+                                value={getConvertion(c)}
+                                name={c}
+                                sx={{ height: "40px" }}
+                                onChange={onChangeInput}
+                                fullWidth
+                                endAdornment={
+                                  <InputAdornment position="start">
+                                    {
+                                      //@ts-ignore
+                                      countries[c].symbol
+                                    }
+                                  </InputAdornment>
+                                }
+                              />
                             </>
                           )}
-                        </Box>
-                      </Box>
+                        </Grid>
+                      </Grid>
                     }
                   />
                 </ListItem>
@@ -173,6 +180,14 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
         </CardContent>
         <CardActions>
           <Box sx={{ textAlign: "center", width: "100%", paddingY: 2 }}>
+            <Button
+              variant="outlined"
+              sx={{ marginRight: 2 }}
+              size="large"
+              onClick={onConvert}
+            >
+              Refresh
+            </Button>
             <Button variant="contained" size="large" onClick={openDrawer(true)}>
               Add
             </Button>
