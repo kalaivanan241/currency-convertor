@@ -15,7 +15,7 @@ import Skeleton from "@mui/material/Skeleton";
 
 import React, { useCallback, useEffect, useState } from "react";
 import countries from "../countries.json";
-import { Grid, InputAdornment, OutlinedInput } from "@mui/material";
+import { Grid, InputAdornment, InputLabel, OutlinedInput } from "@mui/material";
 import useLocalStorage from "../hooks/useLocaleStorage";
 
 const Select = React.lazy(() => import("./Select"));
@@ -140,7 +140,7 @@ const Convertor: React.FC<ConvertorProps> = () => {
                         }}
                       >
                         <Grid xs={6} md={8} item>
-                          {c}
+                          <InputLabel htmlFor={c}>{c}</InputLabel>
                         </Grid>
                         <Grid xs={6} md={4} item>
                           {loading ? (
@@ -155,6 +155,7 @@ const Convertor: React.FC<ConvertorProps> = () => {
                                 type="number"
                                 value={getConvertion(c)}
                                 name={c}
+                                id={c}
                                 sx={{ height: "40px" }}
                                 onChange={onChangeInput}
                                 fullWidth
