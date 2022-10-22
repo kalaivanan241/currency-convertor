@@ -13,7 +13,7 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import Skeleton from "@mui/material/Skeleton";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import countries from "../countries.json";
 import { Grid, InputAdornment, OutlinedInput } from "@mui/material";
 import useLocalStorage from "../hooks/useLocaleStorage";
@@ -104,6 +104,12 @@ const Convertor: React.FC<ConvertorProps> = () => {
     },
     [baseCurrencyAmount, baseCurrencyConvertion, convertionAmount]
   );
+
+  useEffect(() => {
+    if (Object.keys(convertionAmount).length === 0) {
+      onConvert();
+    }
+  }, [convertionAmount, onConvert]);
 
   return (
     <Container maxWidth="md">
