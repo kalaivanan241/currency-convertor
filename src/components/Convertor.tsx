@@ -13,8 +13,9 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import Skeleton from "@mui/material/Skeleton";
 
-import React, { useCallback, useState } from "react";
-import countries from "./../countries.json";
+import React, { useCallback, useEffect, useState } from "react";
+import countries from "../countries.json";
+import { FormControl, InputAdornment, OutlinedInput } from "@mui/material";
 
 const Select = React.lazy(() => import("./Select"));
 
@@ -27,58 +28,35 @@ export enum CurrencyType {
 
 const Convertor: React.FC<ConvertorProps> = (props) => {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [baseCurrency, setBaseCurrency] = useState("USD");
-  const [convertionCurrency, setConversionCurrency] = useState(["HKD", "INR"]);
-  const [currenctSelectedCurrencies, setCurrenctSelectedCurrencies] = useState([
+  const [convertionCurrency, setConversionCurrency] = useState([
+    "HKD",
+    "INR",
     "USD",
   ]);
-  const [convertionAmount, setConvertionAmount] = useState<
-    Record<string, string>
-  >({});
 
-  const [selectedType, setSelecetdType] = useState(CurrencyType.Base);
+  const [baseCurrencyConvertion, setBaseCurrencyConvertion] = useState(1);
+  const [baseCurrencyAmount, setBaseCurrencyAmount] = useState(1);
+
+  const [convertionAmount, setConvertionAmount] = useState<
+    Record<string, number>
+  >({});
 
   const [loading, setLoading] = useState(false);
 
   const openDrawer = useCallback(
-    (open: boolean, currencySelected: CurrencyType) => () => {
-      if (open) {
-        if (currencySelected === CurrencyType.Base) {
-          setCurrenctSelectedCurrencies([baseCurrency]);
-        } else {
-          setCurrenctSelectedCurrencies(convertionCurrency);
-        }
-      }
-
-      setSelecetdType(currencySelected);
+    (open: boolean) => () => {
       setDrawerOpen(open);
     },
-    [baseCurrency, convertionCurrency]
+    []
   );
 
-  const onSelect = useCallback(
-    (code: string, selected: boolean) => {
-      if (selectedType === CurrencyType.Base) {
-        if (selected) {
-          if (baseCurrency !== code) {
-            setConvertionAmount({});
-          }
-          setBaseCurrency(code);
-          setDrawerOpen(false);
-        } else {
-          setBaseCurrency("USD");
-          setConvertionAmount({});
-        }
-      } else {
-        if (selected) {
-          setConversionCurrency((prev) => [...prev, code]);
-        } else {
-          setConversionCurrency((prev) => prev.filter((c) => c !== code));
-        }
-      }
-    },
-    [baseCurrency, selectedType]
-  );
+  const onSelect = useCallback((code: string, selected: boolean) => {
+    if (selected) {
+      setConversionCurrency((prev) => [...prev, code]);
+    } else {
+      setConversionCurrency((prev) => prev.filter((c) => c !== code));
+    }
+  }, []);
 
   const onConvert = useCallback(async () => {
     const myHeaders = new Headers();
@@ -92,7 +70,7 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
     try {
       setLoading(true);
       const data = await fetch(
-        `https://api.apilayer.com/exchangerates_data/latest?base=${baseCurrency}&symbols=${Object.keys(
+        `https://api.apilayer.com/exchangerates_data/latest?base=USD&symbols=${Object.keys(
           countries
         ).join(",")}`,
         requestOptions as RequestInit
@@ -104,27 +82,38 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
     } finally {
       setLoading(false);
     }
-  }, [baseCurrency]);
+  }, []);
+
+  const onChangeInput = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setBaseCurrencyConvertion(Number(convertionAmount[e.target.name]));
+    setBaseCurrencyAmount(Number(e.target.value));
+  };
+
+  useEffect(() => {
+    onConvert();
+  }, [onConvert]);
+
+  const getConvertion = useCallback(
+    (code: string) => {
+      const amount =
+        (convertionAmount[code] / baseCurrencyConvertion) * baseCurrencyAmount;
+
+      return Number(amount.toFixed(3));
+    },
+    [baseCurrencyAmount, baseCurrencyConvertion, convertionAmount]
+  );
 
   return (
     <Container maxWidth="md">
       <Card sx={{ marginTop: 6 }} elevation={6}>
-        <CardHeader title="Base Currency" />
-        <CardContent>
-          <Button
-            variant="outlined"
-            sx={{ width: "75%" }}
-            onClick={openDrawer(true, CurrencyType.Base)}
-          >
-            {baseCurrency}
-          </Button>
-        </CardContent>
         <CardHeader title="Conversion Currencies" />
         <CardContent>
           <List>
             {convertionCurrency.map((c, i) => (
               <React.Fragment key={c}>
-                <ListItem onClick={openDrawer(true, CurrencyType.Convertion)}>
+                <ListItem>
                   <ListItemAvatar>
                     <Avatar
                       src={`data:image/png;base64, ${
@@ -144,7 +133,7 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
                           height: 40,
                         }}
                       >
-                        <Box>{c}</Box>
+                        <Box sx={{ width: "200px" }}>{c}</Box>
                         <Box>
                           {loading ? (
                             <Skeleton
@@ -153,7 +142,24 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
                               height={40}
                             />
                           ) : (
-                            convertionAmount[c] ?? 0
+                            <>
+                              <FormControl fullWidth sx={{ m: 1 }}>
+                                <OutlinedInput
+                                  type="number"
+                                  value={getConvertion(c)}
+                                  name={c}
+                                  onChange={onChangeInput}
+                                  startAdornment={
+                                    <InputAdornment position="start">
+                                      {
+                                        //@ts-ignore
+                                        countries[c].symbol
+                                      }
+                                    </InputAdornment>
+                                  }
+                                />
+                              </FormControl>
+                            </>
                           )}
                         </Box>
                       </Box>
@@ -167,8 +173,8 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
         </CardContent>
         <CardActions>
           <Box sx={{ textAlign: "center", width: "100%", paddingY: 2 }}>
-            <Button variant="contained" size="large" onClick={onConvert}>
-              Convert
+            <Button variant="contained" size="large" onClick={openDrawer(true)}>
+              Add
             </Button>
           </Box>
         </CardActions>
@@ -177,7 +183,7 @@ const Convertor: React.FC<ConvertorProps> = (props) => {
       <Select
         isDrawerOpen={isDrawerOpen}
         setOpenDrawer={setDrawerOpen}
-        selectedCurrencies={currenctSelectedCurrencies}
+        selectedCurrencies={convertionCurrency}
         onSelect={onSelect}
       />
     </Container>

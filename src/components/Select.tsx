@@ -9,9 +9,13 @@ import {
   ListItemButton,
   ListItemText,
   IconButton,
+  Paper,
+  InputBase,
+  Divider,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import React from "react";
+import SearchIcon from "@mui/icons-material/Search";
+import React, { useCallback, useMemo, useState } from "react";
 
 import countries from "./../countries.json";
 
@@ -28,7 +32,9 @@ const Select: React.FC<SelectProps> = ({
   selectedCurrencies,
   onSelect,
 }) => {
-  const toggleDrawer =
+  const [searchText, setSearchText] = useState("");
+
+  const toggleDrawer = useCallback(
     (open: boolean) => (event: React.KeyboardEvent | React.MouseEvent) => {
       if (
         event.type === "keydown" &&
@@ -37,17 +43,26 @@ const Select: React.FC<SelectProps> = ({
       ) {
         return;
       }
-
       setOpenDrawer(open);
-    };
+    },
+    [setOpenDrawer]
+  );
+
+  const filteredResult = useMemo(() => {
+    if (!searchText) return Object.values(countries);
+
+    return Object.values(countries).filter((c) => {
+      return `${c.code} ${c.name} ${c.symbol}`
+        .toLowerCase()
+        .includes(searchText.toLowerCase());
+    });
+  }, [searchText]);
 
   return (
     <Drawer anchor={"left"} open={isDrawerOpen} onClose={toggleDrawer(false)}>
       <Box sx={{ paddingX: 2 }}>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "flex-end",
             position: "sticky",
             top: 0,
             paddingY: 1,
@@ -55,12 +70,40 @@ const Select: React.FC<SelectProps> = ({
             zIndex: 1,
           }}
         >
-          <IconButton aria-label="cancel" onClick={toggleDrawer(false)}>
-            <CloseIcon />
-          </IconButton>
+          <Paper
+            component="form"
+            sx={{
+              p: "2px 4px",
+              display: "flex",
+              alignItems: "center",
+              //   width: 400,
+            }}
+          >
+            <InputBase
+              sx={{ ml: 1, flex: 1 }}
+              placeholder="Search Currencies"
+              inputProps={{ "aria-label": "search currencies" }}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+              }}
+              value={searchText}
+            />
+            <IconButton type="button" sx={{ p: "10px" }} aria-label="search">
+              {!searchText ? <SearchIcon /> : <CloseIcon />}
+            </IconButton>
+            <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
+            <IconButton
+              color="primary"
+              sx={{ p: "10px" }}
+              aria-label="directions"
+              onClick={toggleDrawer(false)}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Paper>
         </Box>
         <List>
-          {Object.entries(countries).map(([code, entry]) => {
+          {filteredResult.map(({ code, ...entry }) => {
             return (
               <ListItem
                 key={code}
@@ -82,10 +125,7 @@ const Select: React.FC<SelectProps> = ({
                       alt={code}
                     />
                   </ListItemAvatar>
-                  <ListItemText
-                    id={code}
-                    primary={`${entry.code} - ${entry.name}`}
-                  />
+                  <ListItemText id={code} primary={`${code} - ${entry.name}`} />
                 </ListItemButton>
               </ListItem>
             );
